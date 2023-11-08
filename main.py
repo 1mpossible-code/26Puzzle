@@ -1,7 +1,9 @@
 from typing import List, Tuple
+import heapq
+from enum import Enum
 
 
-class Directions:
+class Directions(Enum):
     N = 0
     S = 1
     E = 2
@@ -51,7 +53,7 @@ class Puzzle:
         return Puzzle(tiles)
 
     def __repr__(self) -> None:
-        res = ''
+        res = ""
         for i in range(3):
             for j in range(3):
                 line = ""
@@ -84,10 +86,36 @@ class Puzzle:
 
 
 class PuzzleSearch:
-    class Node():
-        def __init__(self, state: Puzzle, parent: Puzzle = None) -> None:
+    class Node:
+        def __init__(
+            self,
+            goal: 'PuzzleSearch.Node',
+            state: Puzzle,
+            parent: "PuzzleSearch.Node" = None,
+            action: Directions = None,
+            path_cost: int = 0,
+        ) -> None:
             self.state = state
-            
+            self.path_cost = path_cost
+            self.heuristics = state.calculate_manhattan_distance(goal)
+            self.total_cost = self.path_cost + self.heuristics
+            self.parent = parent
+            self.action = action
+            self.goal = goal
+
+        def __eq__(self, __value: "PuzzleSearch.Node") -> bool:
+            return self.state == __value.state
+
+    class MaxHeapObj(object):
+        def __init__(self, node: "PuzzleSearch.Node"):
+            self.val = node
+
+        def __lt__(self, other: "PuzzleSearch.MaxHeapObj"):
+            return self.val.total_cost > other.val.total_cost
+
+        def __eq__(self, other: "PuzzleSearch.MaxHeapObj"):
+            return self.val.total_cost == other.val.total_cost
+
     def __init__(self, filename) -> None:
         try:
             with open(filename, "r") as f:
@@ -99,9 +127,33 @@ class PuzzleSearch:
 
         self.initial = Puzzle(blocks[:27])
         self.goal = Puzzle(blocks[27:])
-        self.frontier = []
-        self.reached = {}
+
+    def search(self) -> "PuzzleSearch.Node":
+        goal = PuzzleSearch.Node(self.goal, self.goal)
+        node = PuzzleSearch.Node(self.goal, self.initial)
+        frontier = [PuzzleSearch.MaxHeapObj(node)]
+        reached = {self.initial: node}
+        while len(frontier):
+            node = heapq.heappop(frontier).val
+            if node == goal:
+                return node
+            for child in self.expand(node):
+                s = child.state
+                if s not in reached:
+                    reached[s] = child
+                    heapq.heappush(frontier, PuzzleSearch.MaxHeapObj(child))
+        raise Exception("Solution is not found")
+
+    def expand(self, node: "PuzzleSearch.Node"):
+        s = node.state
+        for direction in Directions:
+            s_prime = s.move(direction)
+            if s_prime != s:
+                cost = node.path_cost + 1
+                yield PuzzleSearch.Node(
+                    node.goal, s_prime, parent=node, action=direction, path_cost=cost
+                )
 
 
 if __name__ == "__main__":
-    PuzzleSearch("Input1.txt")
+    print(PuzzleSearch("Input1.txt").search())
