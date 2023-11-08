@@ -87,7 +87,6 @@ class SearchNode:
                  parent=None,
                  action: Directions = None,
                  path_cost: int = 0,
-                 node_number: int = 0
                  ) -> None:
         self.state = state
         self.parent = parent
@@ -95,7 +94,6 @@ class SearchNode:
         self.path_cost = path_cost
         self.heuristics = ManhattanDistance.calculate(state, goal)
         self.total_cost = self.path_cost + self.heuristics
-        self.node_number = node_number
 
     def __lt__(self, other) -> bool:
         return self.total_cost < other.total_cost
@@ -112,7 +110,7 @@ class AStarSearch:
         self.N = 1
 
     def search(self) -> SearchNode:
-        goal = SearchNode(self.goal, self.goal, node_number=self.N)
+        goal = SearchNode(self.goal, self.goal)
         node = SearchNode(self.initial, self.goal)
         frontier = [node]
         reached = {self.initial: node}
@@ -133,16 +131,16 @@ class AStarSearch:
             if s_prime != s and s_prime not in reached:
                 cost = node.path_cost + 1
                 self.N += 1
-                yield SearchNode(s_prime, self.goal, node, direction, cost, self.N)
+                yield SearchNode(s_prime, self.goal, node, direction, cost)
 
 
 # Solution for Puzzle
 class Solution:
-    def __init__(self, result: SearchNode) -> None:
+    def __init__(self, result: SearchNode, N: int) -> None:
         self.result = result
 
         self.d = self.get_depth(result)
-        self.N = result.node_number
+        self.N = N
         self.actions = self.get_actions()
         self.costs = self.get_costs()
         self.initial = self.get_initial()
@@ -219,8 +217,9 @@ class PuzzleFileIO:
 
 def solve(filename: str) -> Solution:
     initial, goal = PuzzleFileIO.read_puzzle_from_file(filename)
-    result = AStarSearch(initial, goal).search()
-    return Solution(result)
+    a_star = AStarSearch(initial, goal)
+    result = a_star.search()
+    return Solution(result, a_star.N)
 
 
 if __name__ == "__main__":
