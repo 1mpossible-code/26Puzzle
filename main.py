@@ -1,4 +1,3 @@
-import time
 from typing import List, Tuple
 import heapq
 from enum import Enum
@@ -13,14 +12,15 @@ class Directions(Enum):
     D = 5
 
 
-LAST = 2
-FIRST = 0
+LAST: int = 2
+FIRST: int = 0
+
 
 
 class Puzzle:
-    def __init__(self, tiles: List) -> None:
+    def __init__(self, tiles: List[int]) -> None:
         if isinstance(tiles, list):
-            self.__tiles = tuple(map(lambda x: int(x), tiles))
+            self.__tiles: Tuple[int, ...] = tuple(map(lambda x: int(x), tiles))
         elif isinstance(tiles, Puzzle):
             self.__tiles = tiles.get_raw()
 
@@ -30,11 +30,11 @@ class Puzzle:
     def __eq__(self, __rhs: "Puzzle") -> bool:
         return hash(self) == hash(__rhs)
 
-    def get_raw(self) -> tuple:
+    def get_raw(self) -> Tuple[int, ...]:
         return self.__tiles
 
     def move(self, direction: Directions) -> "Puzzle":
-        tiles: list = list(self.__tiles)
+        tiles: List[int] = list(self.__tiles)
         x, y, z = self.get_xyz(0)
         idx = self.get_position(0)
 
@@ -53,7 +53,7 @@ class Puzzle:
 
         return Puzzle(tiles)
 
-    def __repr__(self) -> None:
+    def __repr__(self) -> str:
         res = ""
         for i in range(3):
             for j in range(3):
