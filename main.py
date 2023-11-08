@@ -1,4 +1,5 @@
-from typing import List, Tuple, Dict, Callable, Optional
+from typing import List, Tuple
+
 
 class Directions:
     N = 0
@@ -24,7 +25,7 @@ class Puzzle:
         return self.__tiles
 
     def move(self, direction: Directions) -> 'Puzzle':
-        tiles = list(self.__tiles)
+        tiles: list = list(self.__tiles)
         x, y, z = self.get_xyz(0)
         idx = self.get_position(0)
 
@@ -76,11 +77,15 @@ class Puzzle:
 
 class PuzzleSearch:
     def __init__(self, filename) -> None:
-        with open(filename, "r") as f:
-            content = f.read()
-            blocks = content.split()
-            self.initial = Puzzle(blocks[:27])
-            self.goal = Puzzle(blocks[27:])
+        try:
+            with open(filename, "r") as f:
+                content = f.read()
+                blocks = content.split()
+        except FileNotFoundError as e:
+            print("File not found")
+            exit(1)
+        self.initial = Puzzle(blocks[:27])
+        self.goal = Puzzle(blocks[27:])
 
 
 if __name__ == "__main__":
