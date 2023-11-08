@@ -12,7 +12,13 @@ class Puzzle:
             print()
 
     def calculate_manhattan_distance(self, goal: object) -> int:
-        pass
+        res = 0
+        for i in range(27):
+            t1 = self.get_xyz(i)
+            t2 = goal.get_xyz(i)
+            for j in range(3):
+                res += abs(t1[j] - t2[j])
+        return res
 
     def get_position(self, value: int) -> int:
         return self.__puzzle.index(value)
