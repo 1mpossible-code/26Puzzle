@@ -62,7 +62,7 @@ class Puzzle:
                     line += str(self.__tiles[i * 9 + j * 3 + k]) + " "
                 res += line.strip() + "\n"
             res += "\n"
-        return res
+        return res.strip()
 
     def calculate_manhattan_distance(self, goal: "Puzzle") -> int:
         res = 0
@@ -90,7 +90,7 @@ class PuzzleSearch:
     class Node:
         def __init__(
             self,
-            goal: 'PuzzleSearch.Node',
+            goal: "PuzzleSearch.Node",
             state: Puzzle,
             parent: "PuzzleSearch.Node" = None,
             action: Directions = None,
@@ -103,6 +103,7 @@ class PuzzleSearch:
             self.parent = parent
             self.action = action
             self.goal = goal
+            self.d = 0 if not parent else 1 + parent.d
 
         def __lt__(self, __value: "PuzzleSearch.Node") -> bool:
             return self.total_cost < __value.total_cost
@@ -121,6 +122,52 @@ class PuzzleSearch:
 
         self.initial = Puzzle(blocks[:27])
         self.goal = Puzzle(blocks[27:])
+        self.N = 1
+        self.result = self.search()
+        self.d = self.result.d
+
+    def get_actions(self) -> List[str]:
+        res = []
+        cur = self.result
+        while cur:
+            if cur.action == Directions.N:
+                res.insert(0, "N")
+            elif cur.action == Directions.S:
+                res.insert(0, "S")
+            elif cur.action == Directions.E:
+                res.insert(0, "E")
+            elif cur.action == Directions.W:
+                res.insert(0, "W")
+            elif cur.action == Directions.U:
+                res.insert(0, "U")
+            elif cur.action == Directions.D:
+                res.insert(0, "D")
+            cur = cur.parent
+        return res
+
+    def get_total_costs(self) -> List[int]:
+        res = []
+        cur = self.result
+        while cur:
+            res.insert(0, cur.total_cost)
+            cur = cur.parent
+        return res
+
+    def __repr__(self) -> str:
+        res = ""
+        res += str(self.initial)
+        res += "\n\n"
+        res += str(self.goal)
+        res += "\n\n"
+        res += f"{self.d}\n"
+        res += f"{self.N}\n"
+        res += f'{" ".join(self.get_actions())}\n'
+        res += f'{" ".join(map(str, self.get_total_costs()))}'
+        return res
+
+    def save_file(self, filename: str) -> bool:
+        with open(filename, "w") as f:
+            f.write(str(self))
 
     def search(self) -> "PuzzleSearch.Node":
         goal = PuzzleSearch.Node(self.goal, self.goal)
@@ -131,22 +178,23 @@ class PuzzleSearch:
             node = heapq.heappop(frontier)
             if node == goal:
                 return node
-            for child in self.expand(node):
+            for child in self.expand(node, reached):
                 s = child.state
-                if s not in reached:
-                    reached[s] = child
-                    heapq.heappush(frontier, child)
+                self.N += 1
+                reached[s] = child
+                heapq.heappush(frontier, child)
         raise Exception("Solution is not found")
 
-    def expand(self, node: "PuzzleSearch.Node"):
+    def expand(self, node: "PuzzleSearch.Node", reached):
         s = node.state
         for direction in Directions:
             s_prime = s.move(direction)
-            if s_prime != s:
+            if s_prime != s and s_prime not in reached:
                 cost = node.path_cost + 1
                 yield PuzzleSearch.Node(
                     node.goal, s_prime, parent=node, action=direction, path_cost=cost
                 )
+
 
 def visualization():
     res = PuzzleSearch("Input1.txt").search()
@@ -161,5 +209,12 @@ def visualization():
         print(arr[i])
         input()
 
+
 if __name__ == "__main__":
-    print(PuzzleSearch("Input1.txt").search().total_cost)
+    res = PuzzleSearch("Input1.txt")
+    print(res)
+    # res2 = PuzzleSearch("Input2.txt")
+    # print(res2.d, res2.N)
+    # res3 = PuzzleSearch("Input3.txt")
+    # print(res3.d, res3.N)
+    res.save_file('test.txt')
