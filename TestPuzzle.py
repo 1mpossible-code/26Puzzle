@@ -164,9 +164,7 @@ class TestPuzzle(unittest.TestCase):
 
 18 19 20
 21 22 23
-24 25 26
-
-"""
+24 25 26"""
 
         # Check if the representation is correct
         self.assertEqual(i.__repr__(), d)
@@ -185,9 +183,7 @@ class TestPuzzle(unittest.TestCase):
 
 8 7 6
 5 4 3
-2 1 0
-
-"""
+2 1 0"""
 
         # Check if the representation is correct
         self.assertEqual(i.__repr__(), d)
