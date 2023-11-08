@@ -21,10 +21,16 @@ class Puzzle:
         elif isinstance(tiles, Puzzle):
             self.__tiles = tiles.get_raw()
 
-    def get_raw(self) -> list:
+    def __hash__(self) -> int:
+        return hash(self.get_raw())
+
+    def __eq__(self, __rhs: "Puzzle") -> bool:
+        return hash(self) == hash(__rhs)
+
+    def get_raw(self) -> tuple:
         return self.__tiles
 
-    def move(self, direction: Directions) -> 'Puzzle':
+    def move(self, direction: Directions) -> "Puzzle":
         tiles: list = list(self.__tiles)
         x, y, z = self.get_xyz(0)
         idx = self.get_position(0)
@@ -44,16 +50,18 @@ class Puzzle:
 
         return Puzzle(tiles)
 
-    def display(self) -> None:
+    def __repr__(self) -> None:
+        res = ''
         for i in range(3):
             for j in range(3):
                 line = ""
                 for k in range(3):
                     line += str(self.__tiles[i * 9 + j * 3 + k]) + " "
-                print(line.strip())
-            print()
+                res += line.strip() + "\n"
+            res += "\n"
+        return res
 
-    def calculate_manhattan_distance(self, goal: 'Puzzle') -> int:
+    def calculate_manhattan_distance(self, goal: "Puzzle") -> int:
         res = 0
         for i in range(27):
             t1 = self.get_xyz(i)
@@ -76,6 +84,10 @@ class Puzzle:
 
 
 class PuzzleSearch:
+    class Node():
+        def __init__(self, state: Puzzle, parent: Puzzle = None) -> None:
+            self.state = state
+            
     def __init__(self, filename) -> None:
         try:
             with open(filename, "r") as f:
@@ -84,8 +96,11 @@ class PuzzleSearch:
         except FileNotFoundError as e:
             print("File not found")
             exit(1)
+
         self.initial = Puzzle(blocks[:27])
         self.goal = Puzzle(blocks[27:])
+        self.frontier = []
+        self.reached = {}
 
 
 if __name__ == "__main__":
