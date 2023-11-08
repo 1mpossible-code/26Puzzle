@@ -103,18 +103,11 @@ class PuzzleSearch:
             self.action = action
             self.goal = goal
 
+        def __lt__(self, __value: "PuzzleSearch.Node") -> bool:
+            return self.total_cost < __value.total_cost
+
         def __eq__(self, __value: "PuzzleSearch.Node") -> bool:
             return self.state == __value.state
-
-    class MaxHeapObj(object):
-        def __init__(self, node: "PuzzleSearch.Node"):
-            self.val = node
-
-        def __lt__(self, other: "PuzzleSearch.MaxHeapObj"):
-            return self.val.total_cost > other.val.total_cost
-
-        def __eq__(self, other: "PuzzleSearch.MaxHeapObj"):
-            return self.val.total_cost == other.val.total_cost
 
     def __init__(self, filename) -> None:
         try:
@@ -131,17 +124,17 @@ class PuzzleSearch:
     def search(self) -> "PuzzleSearch.Node":
         goal = PuzzleSearch.Node(self.goal, self.goal)
         node = PuzzleSearch.Node(self.goal, self.initial)
-        frontier = [PuzzleSearch.MaxHeapObj(node)]
+        frontier = [node]
         reached = {self.initial: node}
         while len(frontier):
-            node = heapq.heappop(frontier).val
+            node = heapq.heappop(frontier)
             if node == goal:
                 return node
             for child in self.expand(node):
                 s = child.state
                 if s not in reached:
                     reached[s] = child
-                    heapq.heappush(frontier, PuzzleSearch.MaxHeapObj(child))
+                    heapq.heappush(frontier, child)
         raise Exception("Solution is not found")
 
     def expand(self, node: "PuzzleSearch.Node"):
@@ -156,4 +149,4 @@ class PuzzleSearch:
 
 
 if __name__ == "__main__":
-    print(PuzzleSearch("Input1.txt").search())
+    print(PuzzleSearch("Input1.txt").search().total_cost)
