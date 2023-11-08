@@ -1,3 +1,4 @@
+import time
 from typing import List, Tuple
 import heapq
 from enum import Enum
@@ -147,6 +148,18 @@ class PuzzleSearch:
                     node.goal, s_prime, parent=node, action=direction, path_cost=cost
                 )
 
+def visualization():
+    res = PuzzleSearch("Input1.txt").search()
+    arr = []
+    while res:
+        arr.insert(0, res.state)
+        res = res.parent
+
+    # Print the path one at 3 seconds
+    for i in range(len(arr)):
+        print("Step: ", i)
+        print(arr[i])
+        input()
 
 if __name__ == "__main__":
     print(PuzzleSearch("Input1.txt").search().total_cost)
