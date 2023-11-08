@@ -1,40 +1,29 @@
-from typing import List, Tuple
 import heapq
 from enum import Enum
-
-
-class Directions(Enum):
-    N = 0
-    S = 1
-    E = 2
-    W = 3
-    U = 4
-    D = 5
-
+from typing import List, Tuple
 
 LAST: int = 2
 FIRST: int = 0
 
 
+# Enum for direction which a tile can move
+class Directions(Enum):
+    N, S, E, W, U, D = range(6)
 
-class Puzzle:
+
+# Abstraction for PuzzleState
+class PuzzleState:
     def __init__(self, tiles: List[int]) -> None:
-        if isinstance(tiles, list):
-            self.__tiles: Tuple[int, ...] = tuple(map(lambda x: int(x), tiles))
-        elif isinstance(tiles, Puzzle):
-            self.__tiles = tiles.get_raw()
+        self.tiles: Tuple[int, ...] = tuple(tiles)
 
     def __hash__(self) -> int:
-        return hash(self.get_raw())
+        return hash(self.tiles)
 
-    def __eq__(self, __rhs: "Puzzle") -> bool:
-        return hash(self) == hash(__rhs)
+    def __eq__(self, other: "PuzzleState") -> bool:
+        return self.tiles == other.tiles
 
-    def get_raw(self) -> Tuple[int, ...]:
-        return self.__tiles
-
-    def move(self, direction: Directions) -> "Puzzle":
-        tiles: List[int] = list(self.__tiles)
+    def move(self, direction: Directions) -> "PuzzleState":
+        tiles: List[int] = list(self.tiles)
         x, y, z = self.get_xyz(0)
         idx = self.get_position(0)
 
@@ -51,7 +40,7 @@ class Puzzle:
         elif direction == Directions.D and z != LAST:
             tiles[idx], tiles[idx + 9] = tiles[idx + 9], tiles[idx]
 
-        return Puzzle(tiles)
+        return PuzzleState(tiles)
 
     def __repr__(self) -> str:
         res = ""
@@ -59,22 +48,13 @@ class Puzzle:
             for j in range(3):
                 line = ""
                 for k in range(3):
-                    line += str(self.__tiles[i * 9 + j * 3 + k]) + " "
+                    line += str(self.tiles[i * 9 + j * 3 + k]) + " "
                 res += line.strip() + "\n"
             res += "\n"
         return res.strip()
 
-    def calculate_manhattan_distance(self, goal: "Puzzle") -> int:
-        res = 0
-        for i in range(27):
-            t1 = self.get_xyz(i)
-            t2 = goal.get_xyz(i)
-            for j in range(3):
-                res += abs(t1[j] - t2[j])
-        return res
-
     def get_position(self, value: int) -> int:
-        return self.__tiles.index(value)
+        return self.tiles.index(value)
 
     def get_xyz(self, value: int) -> Tuple[int, int, int]:
         idx = self.get_position(value)
@@ -86,92 +66,54 @@ class Puzzle:
         return x, y, z
 
 
-class PuzzleSearch:
-    class Node:
-        def __init__(
-            self,
-            goal: "PuzzleSearch.Node",
-            state: Puzzle,
-            parent: "PuzzleSearch.Node" = None,
-            action: Directions = None,
-            path_cost: int = 0,
-        ) -> None:
-            self.state = state
-            self.path_cost = path_cost
-            self.heuristics = state.calculate_manhattan_distance(goal)
-            self.total_cost = self.path_cost + self.heuristics
-            self.parent = parent
-            self.action = action
-            self.goal = goal
-            self.d = 0 if not parent else 1 + parent.d
+# Abstraction for Manhattan Distance Heuristic
+class ManhattanDistance:
+    @staticmethod
+    def calculate(state: "PuzzleState", goal: "PuzzleState") -> int:
+        distance = 0
+        for i in range(27):
+            t1 = state.get_xyz(i)
+            t2 = goal.get_xyz(i)
+            for j in range(3):
+                distance += abs(t1[j] - t2[j])
+        return distance
 
-        def __lt__(self, __value: "PuzzleSearch.Node") -> bool:
-            return self.total_cost < __value.total_cost
 
-        def __eq__(self, __value: "PuzzleSearch.Node") -> bool:
-            return self.state == __value.state
+# A node in the search space
+class SearchNode:
+    def __init__(self,
+                 state: PuzzleState,
+                 goal: PuzzleState,
+                 parent=None,
+                 action: Directions = None,
+                 path_cost: int = 0,
+                 node_number: int = 0
+                 ) -> None:
+        self.state = state
+        self.parent = parent
+        self.action = action
+        self.path_cost = path_cost
+        self.heuristics = ManhattanDistance.calculate(state, goal)
+        self.total_cost = self.path_cost + self.heuristics
+        self.node_number = node_number
 
-    def __init__(self, filename) -> None:
-        try:
-            with open(filename, "r") as f:
-                content = f.read()
-                blocks = content.split()
-        except FileNotFoundError as e:
-            print("File not found")
-            exit(1)
+    def __lt__(self, other) -> bool:
+        return self.total_cost < other.total_cost
 
-        self.initial = Puzzle(blocks[:27])
-        self.goal = Puzzle(blocks[27:])
+    def __eq__(self, other: "SearchNode") -> bool:
+        return self.state == other.state
+
+
+# A* Search Algorithm Implementation
+class AStarSearch:
+    def __init__(self, initial: PuzzleState, goal: PuzzleState) -> None:
+        self.initial = initial
+        self.goal = goal
         self.N = 1
-        self.result = self.search()
-        self.d = self.result.d
 
-    def get_actions(self) -> List[str]:
-        res = []
-        cur = self.result
-        while cur:
-            if cur.action == Directions.N:
-                res.insert(0, "N")
-            elif cur.action == Directions.S:
-                res.insert(0, "S")
-            elif cur.action == Directions.E:
-                res.insert(0, "E")
-            elif cur.action == Directions.W:
-                res.insert(0, "W")
-            elif cur.action == Directions.U:
-                res.insert(0, "U")
-            elif cur.action == Directions.D:
-                res.insert(0, "D")
-            cur = cur.parent
-        return res
-
-    def get_total_costs(self) -> List[int]:
-        res = []
-        cur = self.result
-        while cur:
-            res.insert(0, cur.total_cost)
-            cur = cur.parent
-        return res
-
-    def __repr__(self) -> str:
-        res = ""
-        res += str(self.initial)
-        res += "\n\n"
-        res += str(self.goal)
-        res += "\n\n"
-        res += f"{self.d}\n"
-        res += f"{self.N}\n"
-        res += f'{" ".join(self.get_actions())}\n'
-        res += f'{" ".join(map(str, self.get_total_costs()))}'
-        return res
-
-    def save_file(self, filename: str) -> bool:
-        with open(filename, "w") as f:
-            f.write(str(self))
-
-    def search(self) -> "PuzzleSearch.Node":
-        goal = PuzzleSearch.Node(self.goal, self.goal)
-        node = PuzzleSearch.Node(self.goal, self.initial)
+    def search(self) -> SearchNode:
+        goal = SearchNode(self.goal, self.goal, node_number=self.N)
+        node = SearchNode(self.initial, self.goal)
         frontier = [node]
         reached = {self.initial: node}
         while len(frontier):
@@ -180,43 +122,114 @@ class PuzzleSearch:
                 return node
             for child in self.expand(node, reached):
                 s = child.state
-                self.N += 1
                 reached[s] = child
                 heapq.heappush(frontier, child)
-        raise Exception("Solution is not found")
+        raise Exception("No solution found")
 
-    def expand(self, node: "PuzzleSearch.Node", reached):
+    def expand(self, node: SearchNode, reached):
         s = node.state
         for direction in Directions:
             s_prime = s.move(direction)
             if s_prime != s and s_prime not in reached:
                 cost = node.path_cost + 1
-                yield PuzzleSearch.Node(
-                    node.goal, s_prime, parent=node, action=direction, path_cost=cost
-                )
+                self.N += 1
+                yield SearchNode(s_prime, self.goal, node, direction, cost, self.N)
 
 
-def visualization():
-    res = PuzzleSearch("Input1.txt").search()
-    arr = []
-    while res:
-        arr.insert(0, res.state)
-        res = res.parent
+# Solution for Puzzle
+class Solution:
+    def __init__(self, result: SearchNode) -> None:
+        self.result = result
 
-    # Print the path one at 3 seconds
-    for i in range(len(arr)):
-        print("Step: ", i)
-        print(arr[i])
-        input()
+        self.d = self.get_depth(result)
+        self.N = result.node_number
+        self.actions = self.get_actions()
+        self.costs = self.get_costs()
+        self.initial = self.get_initial()
+        self.goal = self.result.state
+
+    def get_initial(self) -> PuzzleState:
+        cur = self.result
+        while cur.parent:
+            cur = cur.parent
+        return cur.state
+
+    def get_actions(self) -> List[str]:
+        actions = []
+        cur = self.result
+        while cur:
+            if cur.action == Directions.N:
+                actions.insert(0, "N")
+            elif cur.action == Directions.S:
+                actions.insert(0, "S")
+            elif cur.action == Directions.E:
+                actions.insert(0, "E")
+            elif cur.action == Directions.W:
+                actions.insert(0, "W")
+            elif cur.action == Directions.U:
+                actions.insert(0, "U")
+            elif cur.action == Directions.D:
+                actions.insert(0, "D")
+            cur = cur.parent
+        return actions
+
+    def get_costs(self) -> List[int]:
+        costs = []
+        cur = self.result
+        while cur:
+            costs.insert(0, cur.total_cost)
+            cur = cur.parent
+        return costs
+
+    def __repr__(self) -> str:
+        res = str(self.initial)
+        res += "\n\n"
+        res += str(self.goal)
+        res += "\n\n"
+        res += f"{self.d}\n"
+        res += f"{self.N}\n"
+        res += f'{" ".join(self.actions)}\n'
+        res += f'{" ".join(map(str, self.costs))}'
+        return res
+
+    @staticmethod
+    def get_depth(result: SearchNode) -> int:
+        cur = result
+        depth = 0
+        while cur.parent:
+            cur = cur.parent
+            depth += 1
+        return depth
+
+
+# File operations for Puzzle
+class PuzzleFileIO:
+    @staticmethod
+    def read_puzzle_from_file(filename: str) -> Tuple[PuzzleState, PuzzleState]:
+        with open(filename, "r") as f:
+            blocks = f.read().split()
+        blocks = list(map(int, blocks))
+        return PuzzleState(blocks[:27]), PuzzleState(blocks[27:])
+
+    @staticmethod
+    def write_solution_to_file(filename: str, solution: Solution) -> None:
+        with open(filename, "w") as f:
+            f.write(str(solution))
+
+
+def solve(filename: str) -> Solution:
+    initial, goal = PuzzleFileIO.read_puzzle_from_file(filename)
+    result = AStarSearch(initial, goal).search()
+    return Solution(result)
 
 
 if __name__ == "__main__":
-    res = PuzzleSearch("Input1.txt")
-    print(res)
-    res2 = PuzzleSearch("Input2.txt")
-    print(res2.d, res2.N)
-    res2.save_file('test2.txt')
-    res3 = PuzzleSearch("Input3.txt")
-    print(res3.d, res3.N)
-    res3.save_file('test3.txt')
-    res.save_file('test.txt')
+    res = solve("Input1.txt")
+    PuzzleFileIO.write_solution_to_file("Input1_solution.txt", res)
+    res2 = solve("Input2.txt")
+    PuzzleFileIO.write_solution_to_file("Input2_solution.txt", res2)
+    res3 = solve("Input3.txt")
+    PuzzleFileIO.write_solution_to_file("Input3_solution.txt", res3)
+
+    resMine = solve("InputMine.txt")
+    PuzzleFileIO.write_solution_to_file("InputMine_solution.txt", resMine)

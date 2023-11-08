@@ -1,5 +1,5 @@
 import unittest
-from main import PuzzleSearch, Puzzle, Directions
+from main_old import PuzzleSearch, Puzzle, Directions
 
 class TestPuzzleSearch(unittest.TestCase):
     def test_search(self):
