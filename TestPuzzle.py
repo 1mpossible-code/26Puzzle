@@ -1,5 +1,5 @@
 import unittest
-from main_old import Puzzle, Directions
+from old_with_visualization import Puzzle, Directions
 
 
 # 0 always present the blank tile

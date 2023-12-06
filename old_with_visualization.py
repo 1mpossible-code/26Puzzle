@@ -197,7 +197,7 @@ class PuzzleSearch:
 
 
 def visualization():
-    res = PuzzleSearch("Input1.txt").search()
+    res = PuzzleSearch("Input2.txt").search()
     arr = []
     while res:
         arr.insert(0, res.state)
@@ -211,16 +211,17 @@ def visualization():
 
 
 if __name__ == "__main__":
-    res = PuzzleSearch("Input1.txt")
-    print(res)
-    res2 = PuzzleSearch("Input2.txt")
-    print(res2.d, res2.N)
-    res2.save_file('test2.txt')
-    res3 = PuzzleSearch("Input3.txt")
-    print(res3.d, res3.N)
-    res3.save_file('test3.txt')
-    res.save_file('test.txt')
+    visualization()
+    # res = PuzzleSearch("Input1.txt")
+    # print(res)
+    # res2 = PuzzleSearch("Input2.txt")
+    # print(res2.d, res2.N)
+    # res2.save_file('test2.txt')
+    # res3 = PuzzleSearch("Input3.txt")
+    # print(res3.d, res3.N)
+    # res3.save_file('test3.txt')
+    # res.save_file('test.txt')
 
-    res_mine = PuzzleSearch("InputMine.txt")
-    print(res_mine.d, res_mine.N)
-    res_mine.save_file('test_mine.txt')
+    # res_mine = PuzzleSearch("InputMine.txt")
+    # print(res_mine.d, res_mine.N)
+    # res_mine.save_file('test_mine.txt')
