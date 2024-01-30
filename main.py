@@ -133,7 +133,7 @@ class ManhattanDistance:
         :return: The Manhattan Distance between the two PuzzleStates.
         """
         distance = 0
-        for i in range(27):
+        for i in range(1, 27):
             t1 = state.get_xyz(i)
             t2 = goal.get_xyz(i)
             for j in range(3):
